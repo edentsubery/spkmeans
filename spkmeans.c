@@ -69,6 +69,7 @@ static void countPoints(FILE *file) {
     } while(1);
     numberOfPoints = numberOfLines;
 }
+
 static void findD(FILE *file) {
     int scanresult;
     char line[1000];
