@@ -8,7 +8,7 @@ typedef struct Eigenvalue Eigenvalue;
 
 static int  compare (const void * a, const void * b);
 static int countCommas(char *str);
-static void spk(Point *points);
+static Matrix spk(Point *points);
 static void countPoints(FILE *file);
 static void findD(FILE *file);
 static void readAllPointsC(Point* points, FILE *file);
@@ -34,13 +34,12 @@ static void addPointToArr(Point *pointsArr, Point point, int i);
 static void addPointToCluster(Cluster *cluster, Point point,int index);
 
 static Matrix createMatrix(int rows,int columns);
-static Cluster * createClusterArrayEmpty(void);
-static void wam(Point *points);
+static Matrix wam(Point *points);
 
-static void ddm(Point *points);
+static Matrix ddm(Point *points);
 
-static void sqrtDDM(Point *points);
-static void lnorm(Point *points);
+static Matrix sqrtDDM(Point *points);
+static Matrix lnorm(Point *points);
 
 static double sumForRow(Matrix matrix,int row,int length);
 
@@ -48,43 +47,41 @@ static Matrix multiplyMatrixes(Matrix A,Matrix B);
 
 static double multiplyRowAndCol(Matrix A,Matrix B,int row,int col);
 
-static void findU(void);
+static Matrix* findU(Matrix LNORM);
 
-static int* findPivot(void);
-static int convergence(void);
-static void fillLnorm(Point *points);
+static int* findPivot(Matrix A);
+static int convergence(Matrix A, Matrix AA);
+static Matrix fillLnorm(Point *points);
 static void printCentroids(const Cluster *clusterArray);
 static void printMatrix(Matrix mat);
 static Matrix transpose(Matrix p);
 static double offDiagonalSum(Matrix mat);
-static double calculateT(int i, int j);
+static double calculateT(int i, int j,Matrix A);
 static Matrix createIdentityMatrix(void);
-static Matrix createPivotMatrix(void);
+static Matrix createPivotMatrix(Matrix A);
 static double* findCandS(double t);
 
 static double distance(Point *points,int i, int j);
 static void emptyClusters(Cluster *clusters) ;
 
-static void columnsToRows(void);
+static Matrix columnsToRows(Matrix U);
 
 static void jacobi(Point *points);
 
-static void convertTMatrixToPoints(Point* points);
+static void convertTMatrixToPoints(Point* points,Matrix T);
 
-static void kmeans(void);
+static void kmeans(Matrix T);
 
-static void evaluateClusters(Point* points1,Cluster* actualClusters);
-
-static void createT(void);
+static Matrix createT(Eigenvalue* eigenvalues,Matrix U);
 
 static void normalizeRows(Matrix mat);
 static void normalizeRowForIndex(Matrix mat, int index);
 
-static void printEigenvalues(void);
-static void eigengapHeuristic(void);
+static void printEigenvalues(Eigenvalue* eigenvalues);
+static void eigengapHeuristic(Eigenvalue* eigenvalues);
 
-static int findGap(void);
-static void configureEigenvalues(void);
-static void sortEigenvalues (void);
+static int findGap(Eigenvalue* eigenvalues);
+static Eigenvalue* configureEigenvalues(Matrix U);
+static void sortEigenvalues (Eigenvalue* eigenvalues,Matrix U);
 static void validateArguments(void);
 static void analyzeArguments( char *const *argv);

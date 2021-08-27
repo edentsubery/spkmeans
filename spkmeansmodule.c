@@ -1,8 +1,10 @@
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "spkmeans.c"
+#include "spkmeans.h"
 #include "../../../Users/edent/AppData/Local/Programs/Python/Python36/include/object.h"
 #include "../../../Users/edent/AppData/Local/Programs/Python/Python36/include/Python.h"
 

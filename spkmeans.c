@@ -34,20 +34,9 @@ int k;
 char* goal;
 int numberOfPoints;
 int MAX_ITER ;
-Eigenvalue* eigenvalues;
-Matrix eigenvectors;
-Matrix P;
-Matrix PT;
-Matrix U;
-Matrix A;
-Matrix AA;
-Matrix WAM;
-Matrix DDM;
-Matrix SQRTDDM;
-Matrix LNORM;
-Matrix T;
 
-static void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1, Cluster *actualClusters);
+
+static void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1);
 
 static int countCommas(char *str) {
     int i;
@@ -184,29 +173,6 @@ static Cluster *createClusterArray(Point* points) {
     return arr;
 }
 
-
-static Cluster *createClusterArrayEmpty(void) {
-    int i,j;
-    Cluster *arr;
-    void *pointerForCentroid;
-    void *pointerForSums;
-    arr = malloc(k * sizeof(Cluster));
-    assert(arr!=NULL);
-    for (i = 0; i < k; i++) {
-        pointerForCentroid = malloc(k * sizeof(double));
-        assert(pointerForCentroid!=NULL);
-        pointerForSums = malloc(k * sizeof(double));
-        assert(pointerForSums!=NULL);
-        arr[i].centroid.coordinates = pointerForCentroid;
-        for(j=0;j<k;j++){
-            arr[i].centroid.coordinates[j]=0;
-        }
-        arr[i].sum_by_coordinates.coordinates = pointerForSums;
-        arr[i].size = 0;
-    }
-    return arr;
-}
-
 static void freeClusterArray(Cluster *cluster) {
     int i;
     for (i = 0; i < k; i++) {
@@ -261,7 +227,7 @@ static Matrix createMatrix(int rows,int columns){
     return matrix;
 }
 
-static void wam(Point *points){
+static Matrix wam(Point *points){
     Matrix matrix;
     int i,j;
     matrix=createMatrix(numberOfPoints,numberOfPoints);
@@ -273,44 +239,45 @@ static void wam(Point *points){
     for(i=0;i<numberOfPoints;i++){
         matrix.values[i][i]=0;
     }
-    WAM=matrix;
+    return matrix;
 }
 
-static void ddm(Point *points){
-    Matrix matrix;
+static Matrix ddm(Point *points){
+    Matrix matrix,WAM;
     int i;
-    wam(points);
+    WAM=wam(points);
     matrix=createMatrix(numberOfPoints,numberOfPoints);
     for(i=0;i<numberOfPoints;i++){
         matrix.values[i][i]=sumForRow(WAM,i,numberOfPoints);
     }
-    DDM=matrix;
+    return matrix;
 }
 
-static void sqrtDDM(Point *points){
-    Matrix matrix;
+static Matrix sqrtDDM(Point *points){
+    Matrix matrix,DDM;
     int i;
-    ddm(points);
+    DDM=ddm(points);
     matrix=createMatrix(numberOfPoints,numberOfPoints);
     for(i=0;i<numberOfPoints;i++){
         matrix.values[i][i]=1/sqrt(DDM.values[i][i]);
     }
-    SQRTDDM=matrix;
+    return matrix;
 }
 
-static void lnorm(Point *points){
-    Matrix I,mat,dwd;
+static Matrix lnorm(Point *points){
+    Matrix I,matrix,dwd,sqrtddm,WAM;
     int i,j;
     I=createIdentityMatrix();
-    mat=createMatrix(numberOfPoints,numberOfPoints);
-    sqrtDDM(points);
-    dwd=multiplyMatrixes(multiplyMatrixes(SQRTDDM,WAM),SQRTDDM);
+    matrix=createMatrix(numberOfPoints,numberOfPoints);
+    sqrtddm=sqrtDDM(points);
+    WAM=wam(points);
+    dwd=multiplyMatrixes(multiplyMatrixes(sqrtddm,WAM),sqrtddm);
     for(i=0;i<numberOfPoints;i++){
         for(j=0;j<numberOfPoints;j++){
-            mat.values[i][j]=I.values[i][j]-dwd.values[i][j];
+            matrix.values[i][j]=I.values[i][j]-dwd.values[i][j];
         }
     }
-    LNORM=mat;
+    return matrix;
 }
 
 static double sumForRow(Matrix matrix,int row,int length){
@@ -346,25 +313,29 @@ static double multiplyRowAndCol(Matrix AA,Matrix BB,int row,int col){
 }
 
 
-static void findU(){
+static Matrix* findU(Matrix LNORM){
     int i = 0;
+    Matrix A,P,PT,AA,U;
+    Matrix* UAA=malloc(2* sizeof(Matrix));
     A=LNORM;
-    P=createPivotMatrix();
+    P=createPivotMatrix(A);
     PT=transpose(P);
     AA=multiplyMatrixes(multiplyMatrixes(PT,A),P);
     U=P;
-    while(!convergence()&&i<100){
+    while((!convergence(A,AA))&&i<100){
         A=AA;
-        P=createPivotMatrix();
+        P=createPivotMatrix(A);
         PT=transpose(P);
         AA=multiplyMatrixes(multiplyMatrixes(PT,A),P);
         U=multiplyMatrixes(U,P);
         i++;
     }
-    configureEigenvalues();
+    UAA[0]=U;
+    UAA[1]=AA;
+    return UAA;
 }
 
-static int* findPivot(void){
+static int* findPivot(Matrix A){
     double max;
     int *pivot;
     int i,j;
@@ -385,7 +356,7 @@ static int* findPivot(void){
     return pivot;
 }
 
-static int convergence(void){
+static int convergence(Matrix A, Matrix AA){
     if(offDiagonalSum(A)-offDiagonalSum(AA)<=0.000000000000001){
         return 1;
     }
@@ -432,7 +403,7 @@ static double offDiagonalSum(Matrix mat){
     }
     return sum;
 }
-static double calculateT(int i, int j){
+static double calculateT(int i, int j,Matrix A){
     double theta,t;
     theta=(A.values[j][j]-A.values[i][i])/(2*(A.values[i][j]));
     if(theta<0){
@@ -452,11 +423,11 @@ static Matrix createIdentityMatrix(void){
     }
     return mat;
 }
-static Matrix createPivotMatrix(void){
-    int* pivot=findPivot();
+static Matrix createPivotMatrix(Matrix A){
+    int* pivot=findPivot(A);
     int i=pivot[0];
     int j=pivot[1];
-    double t=calculateT(i,j);
+    double t=calculateT(i,j,A);
     double* cs=findCandS(t);
     double c=cs[0];
     double s=cs[1];
@@ -496,7 +467,7 @@ static void emptyClusters(Cluster *clusters) {
     }
 }
 
-static void columnsToRows(void){
+static Matrix columnsToRows(Matrix U){
     Matrix mat;
     int i,j;
     mat=createMatrix(numberOfPoints,numberOfPoints);
@@ -505,18 +476,17 @@ static void columnsToRows(void){
             mat.values[i][j]=U.values[j][i];
         }
     }
-    eigenvectors=mat;
+    return mat;
 }
 
 static void jacobi(Point *points){
-    fillLnorm(points);
-    findU();
-    configureEigenvalues();
-    sortEigenvalues();
-    columnsToRows();
+    Matrix* UAA=findU(fillLnorm(points));
+    Matrix eigenvectors=columnsToRows(UAA[0]);
+    printEigenvalues(configureEigenvalues(UAA[1]));
+    printMatrix(eigenvectors);
 }
 
-static void convertTMatrixToPoints(Point* points){
+static void convertTMatrixToPoints(Point* points,Matrix T){
     Point *curPoint;
     int index;
     int i;
@@ -533,7 +503,7 @@ static void convertTMatrixToPoints(Point* points){
     }
 }
 
-static void fillLnorm(Point *points){
+static Matrix fillLnorm(Point *points){
     Matrix mat;
     int i,j;
     mat=createMatrix(numberOfPoints,numberOfPoints);
@@ -542,28 +512,24 @@ static void fillLnorm(Point *points){
             mat.values[i][j]=points[i].coordinates[j];
         }
     }
-    LNORM=mat;
+    return mat;
 }
 
-static void kmeans(){
+static void kmeans(Matrix T){
     Point *points1;
     Cluster *clusterArray1;
-    Cluster *actualClusters;
     d=k;
     points1=malloc(T.rows*sizeof(struct Point));
-    actualClusters=createClusterArrayEmpty();
-    convertTMatrixToPoints(points1);
+    convertTMatrixToPoints(points1,T);
     clusterArray1 = createClusterArray(points1);
-    kmeansWithInitialCentroids(points1, clusterArray1, actualClusters);
-    freeClusterArray(actualClusters);
+    kmeansWithInitialCentroids(points1, clusterArray1);
     freeClusterArray(clusterArray1);
     freePointPointer(points1);
 }
 
-static void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1, Cluster *actualClusters) {
+static void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1) {
     calculateCentroids(points1, clusterArray1);
-    evaluateClusters(points1,actualClusters);
-    printCentroids(actualClusters);
+    printCentroids(clusterArray1);
 }
 
 static void printCentroids(const Cluster *clusterArray) {
@@ -580,7 +546,7 @@ static void printCentroids(const Cluster *clusterArray) {
     }
 }
 
-static void printEigenvalues(void){
+static void printEigenvalues(Eigenvalue* eigenvalues){
     int j;
     for (j = 0; j < numberOfPoints; j++) {
         if (j == numberOfPoints- 1) {
@@ -590,14 +556,6 @@ static void printEigenvalues(void){
         }
     }
 
-}
-
-static void evaluateClusters(Point* points1,Cluster* actualClusters){
-    int i;
-    for(i=0;i<numberOfPoints;i++){
-        addPointToCluster(actualClusters,points1[i],points1[i].index);
-    }
-    calculateNewCentroid(actualClusters);
 }
 
 int main(int args, char *argv[]){
@@ -611,41 +569,38 @@ int main(int args, char *argv[]){
     readAllPointsC(points,file);
     validateArguments();
     if(strcmp(goal,"wam") == 0){
-        wam(points);
-        printMatrix(WAM);
+        printMatrix(wam(points));
     }
     else if(strcmp(goal,"ddg") == 0){
-        ddm(points);
-        printMatrix(DDM);
+        printMatrix(ddm(points));
     }
     else if(strcmp(goal,"lnorm") == 0){
-        lnorm(points);
-        printMatrix(LNORM);
+        printMatrix(lnorm(points));
     }  
     else if(strcmp(goal,"jacobi") == 0){
         jacobi(points);
-        printEigenvalues();
-        printMatrix(eigenvectors);
     }
     else{
-        spk(points);
-        kmeans();
+        kmeans(spk(points));
+
     }
     freePointPointer(points);
     return 0;
 }
 
-void spk(Point *points) {
-    lnorm(points);
-    findU();
-    sortEigenvalues();
+static Matrix spk(Point *points) {
+    Matrix LNORM=lnorm(points);
+    Matrix* UAA=findU(LNORM);
+    Eigenvalue * eigenvalues=configureEigenvalues(UAA[1]);
+    sortEigenvalues(eigenvalues,UAA[0]);
     if(k==0){
-        eigengapHeuristic();
+        printEigenvalues(eigenvalues);
+        eigengapHeuristic(eigenvalues);
     }
-    createT();
+    return createT(eigenvalues,UAA[0]);
 }
 
-static void createT(void){
+static Matrix createT(Eigenvalue* eigenvalues,Matrix U){
     Matrix mat;
     int i,j,col;
     mat=createMatrix(numberOfPoints,k);
@@ -656,7 +611,7 @@ static void createT(void){
         }
     }
     normalizeRows(mat);
-    T=mat;
+    return mat;
 }
 
 static void normalizeRows(Matrix mat){
@@ -677,11 +632,11 @@ static void normalizeRowForIndex(Matrix mat, int index){
         mat.values[index][i]=mat.values[index][i]/size;
     }
 }
-static void sortEigenvalues (void){
+static void sortEigenvalues (Eigenvalue* eigenvalues,Matrix U){
     qsort (eigenvalues,U.columns, sizeof(Eigenvalue), (int (*)(const void *, const void *)) compare);
 }
 
-static void configureEigenvalues(void){
+static Eigenvalue * configureEigenvalues(Matrix AA){
     Eigenvalue * eg;
     int i;
     eg=malloc(numberOfPoints* sizeof(Eigenvalue));
@@ -690,14 +645,14 @@ static void configureEigenvalues(void){
         eg[i].index = i;
         eg[i].value = AA.values[i][i];
     }
-    eigenvalues=eg;
+    return eg;
 }
 
-int compare (const void * a, const void * b)
+static int compare (const void * a, const void * b)
 {
     double diff=(*(Eigenvalue *)a).value - (*(Eigenvalue *)b).value;
     if(diff==0){
-        return 0;
+        return (*(Eigenvalue *)a).index - (*(Eigenvalue *)b).index;
     }
     if(diff>0){
         return 1;
@@ -707,11 +662,11 @@ int compare (const void * a, const void * b)
     }
 }
 
-static void eigengapHeuristic(void){
-    k= findGap();
+static void eigengapHeuristic(Eigenvalue* eigenvalues){
+    k= findGap(eigenvalues);
 }
 
-static int findGap(void){
+static int findGap(Eigenvalue* eigenvalues){
     double max;
     int i,index;
     index=0;
