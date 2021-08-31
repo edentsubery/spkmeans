@@ -10,19 +10,17 @@ setup(
     packages=find_packages(),
     license='GPL-2',
 
-
     classifiers=[
         'Development Status:: 3- Alpha',
         'License:: OSI Approved:: GNU General Public License v2 (GPLv2)',
         'Natural Language:: English',
         'Programming Language:: Python :: 3:: Only',
         'Programming Language:: Python :: Implementation :: CPython',
-        ],
-    
+    ],
+
     ext_modules=[
         Extension("spkmeansmodule", sources=[
-                'spkmeansmodule.c', 'spkmeans.c']
-        )
+            'spkmeansmodule.c', 'spkmeans.c']
+                  )
     ],
 )
-

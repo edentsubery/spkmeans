@@ -2,7 +2,6 @@ import numpy as np
 import sys
 import spkmeansmodule as sp
 
-
 def convertToList(array):
     n = len(array)
     d = len(array[0])
@@ -34,14 +33,18 @@ def distance(point, centroid, min):
 def kmeans_pp(result):
     n = len(result)
     k = len(result[0])
+    centroids, indices, points_min = preparations(k, n)
+    calculate_initial_centroids(centroids, indices, k, n, result, points_min)
+    print_indices(indices, k)
+    return convertToList(centroids), n, k
+
+
+def preparations(k, n):
     np.random.seed(0)
-    indexes = np.empty(k)
+    indices = np.empty(k)
     centroids = np.empty((k, k))
     points_min = np.full(n, np.inf)
-    calculate_initial_centroids(centroids, indexes, k, n, result, points_min)
-    print(convertToList(centroids))
-    print_indexes(indexes, k)
-    sp.kmeanspp(convertToList(result), convertToList(centroids), k, k, 300, n)
+    return centroids, indices, points_min
 
 
 def analyze_arguments():
@@ -51,38 +54,30 @@ def analyze_arguments():
     return k, path, goal
 
 
-def validate_arguments(k, d, n):
-    if k >= n:
-        print("Invalid Input!")
-        exit(0)
-    if d <= 0:
-        print("Invalid Input!")
-        exit(0)
-
-
-def calculate_initial_centroids(centroids, indexes, k, n, points, points_min):
+def calculate_initial_centroids(centroids, indices, k, n, points, points_min):
     index = np.random.choice(n)
-    indexes[0] = index
+    indices[0] = index
     centroids[0] = points[index]
     distribution = np.empty(n)
     for i in range(1, k):
         distribution = utility(points, centroids, points_min, distribution, i - 1)
         index = np.random.choice(n, 1, p=distribution)
-        indexes[i] = index[0]
+        indices[i] = index[0]
         centroids[i] = points[index[0]]
 
 
-def print_indexes(indexes, k):
+def print_indices(indices, k):
     for i in range(k - 1):
-        print(str(int(indexes[i])) + ",", end="")
-    print(str(int(indexes[k - 1])))
+        print(str(int(indices[i])) + ",", end="")
+    print(str(int(indices[k - 1])))
 
 
 def spkmeans():
     k, path, goal = analyze_arguments()
     result = sp.goal(k, path, goal)
     if goal == "spk":
-        kmeans_pp(result)
+        centroids, n, k_new = kmeans_pp(result)
+        sp.kmeanspp(result, centroids, k_new, k_new, 300, n)
 
 
 spkmeans()
