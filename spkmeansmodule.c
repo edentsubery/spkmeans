@@ -19,7 +19,7 @@ static PyObject* createReturnedArray(double** matrixValues) {
             PyList_SetItem(returnedPoint,j,PyFloat_FromDouble(matrixValues[i][j]));
         }
         PyList_SetItem(returnedList,i,returnedPoint);
-    };
+    }
     return returnedList;
 }
 
@@ -67,9 +67,7 @@ static void readAllPointsPy( Point *points,PyObject* pyPoints) {
 }
 
 static PyObject * goalFunction(PyObject *self, PyObject *args){
-    printf("before generalPy");
     Point* points= generalPy(args);
-    printf("after generalPy");
     if(strcmp(goal,"spk")!=0){
         notSPK(points);
         Matrix T=createMatrix(numberOfPoints,k);
@@ -83,12 +81,12 @@ static PyObject * goalFunction(PyObject *self, PyObject *args){
 }
 
 
-static void kmeanspp(PyObject *self, PyObject *args){
+static void kmeansppC(PyObject *self, PyObject *args){
     Point *points1;
     Cluster *clusterArray1;
     PyObject* pyCentroids;
     PyObject* pyPoints;
-    if(!PyArg_ParseTuple(args,"ooiiii",&pyPoints, &pyCentroids,&k,&d,&MAX_ITER,&numberOfPoints)){
+    if(!PyArg_ParseTuple(args,"OOiiii",&pyPoints, &pyCentroids,&k,&d,&MAX_ITER,&numberOfPoints)){
         printf("An Error Has Occured\n");
         exit(0);
     }
@@ -117,7 +115,7 @@ static Point *generalPy(PyObject *args) {
 
 static PyMethodDef capiMethods[]={
         {"kmeanspp",
-         (PyCFunction) kmeanspp,
+         (PyCFunction) kmeansppC,
          METH_VARARGS,
          PyDoc_STR("calculates k means with the initial centroids passed to it")},
 

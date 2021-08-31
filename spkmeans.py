@@ -19,8 +19,8 @@ def utility(points, centroids, points_min, distribution, i):
     for index, point in enumerate(points):
         distribution[index] = distance(point, centroids[i], points_min[index])
         points_min[index] = distribution[index]
-    sum1 = np.sum(distribution)
-    distribution = distribution / sum1
+    sum = np.sum(distribution)
+    distribution = distribution / sum
     return distribution
 
 
@@ -34,25 +34,17 @@ def distance(point, centroid, min):
 def kmeans_pp(result):
     n = len(result)
     k = len(result[0])
+    np.random.seed(0)
     indexes = np.empty(k)
     centroids = np.empty((k, k))
     points_min = np.full(n, np.inf)
     calculate_initial_centroids(centroids, indexes, k, n, result, points_min)
+    print(convertToList(centroids))
     print_indexes(indexes, k)
-    print(k,n,result)
-    # sp.kmeanspp(result, convertToList(centroids), k, k, 300, n)
+    sp.kmeanspp(convertToList(result), convertToList(centroids), k, k, 300, n)
 
 
-def create_points_list(k, points):
-    n, d = points.shape  # n- number of rows , d - number of columns
-    validate_arguments(k, d, n)
-    points_min = np.full(n, np.inf)
-    points = points.to_numpy()
-    np.random.seed(0)
-    return d, n, points, points_min
-
-
-def analize_arguments():
+def analyze_arguments():
     k = int(sys.argv[1])
     path = str(sys.argv[3])
     goal = str(sys.argv[2])
@@ -87,7 +79,7 @@ def print_indexes(indexes, k):
 
 
 def spkmeans():
-    k, path, goal = analize_arguments()
+    k, path, goal = analyze_arguments()
     result = sp.goal(k, path, goal)
     if goal == "spk":
         kmeans_pp(result)

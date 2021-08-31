@@ -339,13 +339,24 @@ void printMatrix(Matrix mat) {
     for (i = 0; i < mat.rows; i++) {
         for (j = 0; j < mat.columns; j++) {
             if (j == mat.columns - 1) {
-                printf("%0.4f\n", mat.values[i][j]);
+                if(mat.values[i][j]<0&&mat.values[i][j]>-0.00005){
+                    printf("0.0000\n");
+                }
+                else{
+                    printf("%0.4f\n", mat.values[i][j]);
+                }
             } else {
-                printf("%0.4f,", mat.values[i][j]);
+                if(mat.values[i][j]<0&&mat.values[i][j]>-0.00005){
+                    printf("0.0000,");
+                }
+                else{
+                    printf("%0.4f,", mat.values[i][j]);
+                }
             }
         }
     }
 }
+
 Matrix transpose(Matrix p){
     Matrix pt;
     int i,j;
@@ -578,7 +589,6 @@ Matrix spk(Point *points) {
         eigengapHeuristic(eigenvalues);
     }
     Matrix T=createT(eigenvalues,UAA[0]);
-    printMatrix(T);
     return T;
 }
 
