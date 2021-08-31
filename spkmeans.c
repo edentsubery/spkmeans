@@ -7,6 +7,15 @@
 #include "spkmeans.h"
 
 
+void freeMatrix(Matrix matrix){
+    int i;
+    for(i=0;i<matrix.rows;i++){
+        free(matrix.values[i]);
+    }
+    free(matrix.values);
+}
+
+
 int countCommas(char *str) {
     int i;
     for (i = 0; str[i]; str[i] == ',' ? i++ : *str++);
@@ -60,7 +69,8 @@ void readAllPointsC(Point *points, FILE *file) {
             curPoint->coordinates[i] = value;
         }
         addPointToArr(points, *curPoint, index++);
-
+        free(curPoint->coordinates);
+        free(curPoint);
         if (index != numberOfPoints) {
             fscanf(file, "\n");
         }
@@ -84,10 +94,6 @@ void calculateCentroids(Point *points, Cluster *clusterArray) {
         }
         changed = calculateNewCentroid(clusterArray);
     }
-}
-
-void freePointPointer(Point *arr) {
-    free(arr);
 }
 
 int calculateNewCentroid(Cluster *cluster) {
@@ -169,7 +175,12 @@ int closestCentroid(Cluster *clusters, Point point) {
 }
 
 void addPointToArr(Point *pointsArr, Point point, int i) {
-    pointsArr[i] = point;
+    int j;
+    pointsArr[i].coordinates=malloc(d* sizeof(double ));
+    assert(pointsArr[i].coordinates!=NULL);
+    for(j=0;j<d;j++){
+        pointsArr[i].coordinates[j]=point.coordinates[j];
+    }
 }
 
 void addPointToCluster(Cluster *cluster, Point point, int index) {
@@ -220,6 +231,7 @@ Matrix ddm(Point *points) {
     for (i = 0; i < numberOfPoints; i++) {
         matrix.values[i][i] = sumForRow(WAM, i, numberOfPoints);
     }
+    freeMatrix(WAM);
     return matrix;
 }
 
@@ -231,22 +243,29 @@ Matrix sqrtDDM(Point *points) {
     for (i = 0; i < numberOfPoints; i++) {
         matrix.values[i][i] = 1 / sqrt(DDM.values[i][i]);
     }
+    freeMatrix(DDM);
     return matrix;
 }
 
 Matrix lnorm(Point *points) {
-    Matrix I, matrix, dwd, sqrtddm, WAM;
+    Matrix I, matrix, dwd, sqrtddm, WAM,middle;
     int i, j;
     I = createIdentityMatrix();
     matrix = createMatrix(numberOfPoints, numberOfPoints);
     sqrtddm = sqrtDDM(points);
     WAM = wam(points);
-    dwd = multiplyMatrixes(multiplyMatrixes(sqrtddm, WAM), sqrtddm);
+    middle=multiplyMatrixes(sqrtddm, WAM);
+    dwd = multiplyMatrixes(middle, sqrtddm);
+    freeMatrix(middle);
+    freeMatrix(WAM);
+    freeMatrix(sqrtddm);
     for (i = 0; i < numberOfPoints; i++) {
         for (j = 0; j < numberOfPoints; j++) {
             matrix.values[i][j] = I.values[i][j] - dwd.values[i][j];
         }
     }
+    freeMatrix(I);
+    freeMatrix(dwd);
     return matrix;
 }
 
@@ -262,7 +281,7 @@ double sumForRow(Matrix matrix, int row, int length) {
 }
 
 Matrix multiplyMatrixes(Matrix A, Matrix B) {
-    struct Matrix result;
+    Matrix result;
     int i, j;
     result = createMatrix(A.rows, B.columns);
     for (i = 0; i < A.rows; i++) {
@@ -285,21 +304,35 @@ double multiplyRowAndCol(Matrix AA, Matrix BB, int row, int col) {
 
 Matrix *findU(Matrix LNORM) {
     int i = 0;
-    Matrix A, P, PT, AA, U;
+    Matrix A, P, PT, AA, U,UU,middle,I;
     Matrix *UAA = malloc(2 * sizeof(Matrix));
     A = LNORM;
     P = createPivotMatrix(A);
+    I=createIdentityMatrix();
     PT = transpose(P);
-    AA = multiplyMatrixes(multiplyMatrixes(PT, A), P);
-    U = P;
+    U =multiplyMatrixes(P,I);
+    middle=multiplyMatrixes(PT, A);
+    AA = multiplyMatrixes(middle, P);
+    freeMatrix(middle);
+    freeMatrix(P);
+    freeMatrix(I);
+    freeMatrix(PT);
     while ((!convergence(A, AA)) && i < 100) {
+        freeMatrix(A);
         A = AA;
         P = createPivotMatrix(A);
         PT = transpose(P);
-        AA = multiplyMatrixes(multiplyMatrixes(PT, A), P);
-        U = multiplyMatrixes(U, P);
+        UU = multiplyMatrixes(U, P);
+        freeMatrix(U);
+        U=UU;
+        middle=multiplyMatrixes(PT, A);
+        AA = multiplyMatrixes(middle, P);
+        freeMatrix(middle);
+        freeMatrix(PT);
+        freeMatrix(P);
         i++;
     }
+    freeMatrix(A);
     UAA[0] = U;
     UAA[1] = AA;
     return UAA;
@@ -340,7 +373,7 @@ void printMatrix(Matrix mat) {
     for (i = 0; i < mat.rows; i++) {
         for (j = 0; j < mat.columns; j++) {
             if (j == mat.columns - 1) {
-                if (mat.values[i][j] < 0 && mat.values[i][j] > -0.00005) {
+                if (mat.values[i][j] <= 0 && mat.values[i][j] > -0.00005) {
                     printf("0.0000\n");
                 } else {
                     printf("%0.4f\n", mat.values[i][j]);
@@ -416,6 +449,8 @@ Matrix createPivotMatrix(Matrix A) {
     mat.values[j][j] = c;
     mat.values[i][j] = s;
     mat.values[j][i] = -s;
+    free(pivot);
+    free(cs);
     return mat;
 }
 
@@ -461,11 +496,19 @@ Matrix columnsToRows(Matrix U) {
 }
 
 void jacobi(Point *points) {
-    Matrix *UAA = findU(fillLnorm(points));
+    Matrix LNORM=fillLnorm(points);
+    Matrix *UAA = findU(LNORM);
     Matrix eigenvectors = columnsToRows(UAA[0]);
-    printEigenvalues(configureEigenvalues(UAA[1]));
+    Eigenvalue * eigenvalues=configureEigenvalues(UAA[1]);
+    printEigenvalues(eigenvalues);
     printMatrix(eigenvectors);
+    freeMatrix(LNORM);
+    freeMatrix(eigenvectors);
+    freeMatrix(UAA[0]);
+    freeMatrix(UAA[1]);
+    free(eigenvalues);
 }
+
 
 void convertTMatrixToPoints(Point *points, Matrix T) {
     Point *curPoint;
@@ -481,6 +524,8 @@ void convertTMatrixToPoints(Point *points, Matrix T) {
             curPoint->coordinates[i] = T.values[index][i];
         }
         addPointToArr(points, *curPoint, index++);
+        free(curPoint->coordinates);
+        free(curPoint);
     }
 }
 
@@ -505,7 +550,15 @@ void kmeans(Matrix T) {
     clusterArray1 = createClusterArray(points1);
     kmeansWithInitialCentroids(points1, clusterArray1);
     freeClusterArray(clusterArray1);
-    freePointPointer(points1);
+    freePointsArray(points1);
+}
+
+void freePointsArray(Point* points){
+    int i;
+    for(i=0;i<numberOfPoints;i++){
+        free(points[i].coordinates);
+    }
+    free(points);
 }
 
 void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1) {
@@ -545,23 +598,30 @@ int main(int args, char *argv[]) {
         notSPK(points);
         return 0;
     } else {
-        kmeans(spk(points));
+        Matrix T=spk(points);
+        kmeans(T);
+        freeMatrix(T);
         return 0;
     }
 
 }
 
 void notSPK(Point *points) {
+    Matrix result;
     if (strcmp(goal, "wam") == 0) {
-        printMatrix(wam(points));
+        result=wam(points);
+        printMatrix(result);
     } else if (strcmp(goal, "ddg") == 0) {
-        printMatrix(ddm(points));
+        result=ddm(points);
+        printMatrix(result);
     } else if (strcmp(goal, "lnorm") == 0) {
-        printMatrix(lnorm(points));
+        result=lnorm(points);
+        printMatrix(result);
     } else if (strcmp(goal, "jacobi") == 0) {
         jacobi(points);
     }
-    freePointPointer(points);
+    freeMatrix(result);
+    freePointsArray(points);
 }
 
 Point *generalC(int args, char *argv[]) {
@@ -574,19 +634,25 @@ Point *generalC(int args, char *argv[]) {
     points = getPointPointer();
     readAllPointsC(points, file);
     validateArguments();
+    fclose(file);
     return points;
 }
 
 Matrix spk(Point *points) {
     Matrix LNORM = lnorm(points);
     Matrix *UAA = findU(LNORM);
+    Matrix T;
     Eigenvalue *eigenvalues = configureEigenvalues(UAA[1]);
+    freeMatrix(UAA[1]);
     sortEigenvalues(eigenvalues, UAA[0]);
     if (k == 0) {
         printEigenvalues(eigenvalues);
         eigengapHeuristic(eigenvalues);
     }
-    Matrix T = createT(eigenvalues, UAA[0]);
+    freePointsArray(points);
+    T=createT(eigenvalues, UAA[0]);
+    free(UAA);
+    free(eigenvalues);
     return T;
 }
 
@@ -601,6 +667,7 @@ Matrix createT(Eigenvalue *eigenvalues, Matrix U) {
         }
     }
     normalizeRows(mat);
+    freeMatrix(U);
     return mat;
 }
 

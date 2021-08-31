@@ -29,6 +29,8 @@ typedef struct Cluster {
     int size;
 } Cluster;
 
+void freeMatrix(Matrix matrix);
+
 void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1);
 
 int compare(const void *a, const void *b);
@@ -44,10 +46,9 @@ void findD(FILE *file);
 void readAllPointsC(Point *points, FILE *file);
 
 Point *getPointPointer(void);
+void freePointsArray(Point* points);
 
 void calculateCentroids(Point *points, Cluster *clusterArray);
-
-void freePointPointer(Point *arr);
 
 int calculateNewCentroid(Cluster *cluster);
 

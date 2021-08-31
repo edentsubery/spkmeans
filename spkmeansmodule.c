@@ -20,6 +20,7 @@ static Point *generalPy(PyObject *args) {
     points = getPointPointer();
     readAllPointsC(points, file);
     validateArguments();
+    fclose(file);
     return points;
 }
 
@@ -80,6 +81,8 @@ static void readAllPointsPy(Point *points, PyObject *pyPoints) {
             curPoint->coordinates[i] = PyFloat_AsDouble(PyList_GetItem(pyList, i));
         }
         addPointToArr(points, *curPoint, index++);
+        free(curPoint->coordinates);
+        free(curPoint);
     }
     Py_XDECREF(pyList);
 }
@@ -91,11 +94,13 @@ static PyObject *goalFunction(PyObject *self, PyObject *args) {
         Matrix T = createMatrix(numberOfPoints, k);
         PyObject *result = createReturnedArray(T.values);
         Py_XINCREF(result);
+        freeMatrix(T);
         return result;
     } else {
         Matrix T = spk(points);
-        freePointPointer(points);
+        freePointsArray(points);
         PyObject *result = createReturnedArray(T.values);
+        freeMatrix(T);
         Py_XINCREF(result);
         return result;
     }
@@ -116,7 +121,7 @@ static PyObject *kmeansppC(PyObject *self, PyObject *args) {
     clusterArray1 = createClusterArrayWithCentroids(pyCentroids);
     kmeansWithInitialCentroids(points1, clusterArray1);
     freeClusterArray(clusterArray1);
-    freePointPointer(points1);
+    freePointsArray(points1);
     Py_XDECREF(pyPoints);
     Py_XDECREF(pyCentroids);
     return Py_BuildValue("");
