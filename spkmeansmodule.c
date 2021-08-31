@@ -36,7 +36,6 @@ static PyObject *createReturnedArray(double **matrixValues) {
         }
         PyList_SetItem(returnedList, i, returnedPoint);
     }
-    Py_XINCREF(returnedList);
     return returnedList;
 }
 
@@ -61,7 +60,6 @@ static Cluster *createClusterArrayWithCentroids(PyObject *pyCentroids) {
         arr[i].sum_by_coordinates.coordinates = pointerForSums;
         arr[i].size = 0;
     }
-    Py_XDECREF(pyList);
     return arr;
 }
 
@@ -84,26 +82,21 @@ static void readAllPointsPy(Point *points, PyObject *pyPoints) {
         free(curPoint->coordinates);
         free(curPoint);
     }
-    Py_XDECREF(pyList);
 }
 
 static PyObject *goalFunction(PyObject *self, PyObject *args) {
     Point *points = generalPy(args);
+    Matrix T;
     if (strcmp(goal, "spk") != 0) {
         notSPK(points);
-        Matrix T = createMatrix(numberOfPoints, k);
-        PyObject *result = createReturnedArray(T.values);
-        Py_XINCREF(result);
-        freeMatrix(T);
-        return result;
+        T = createMatrix(numberOfPoints, k);
     } else {
-        Matrix T = spk(points);
-        freePointsArray(points);
-        PyObject *result = createReturnedArray(T.values);
-        freeMatrix(T);
-        Py_XINCREF(result);
-        return result;
+        T = spk(points);
     }
+//    freePointsArray(points);
+    PyObject *result = createReturnedArray(T.values);
+    freeMatrix(T);
+    return result;
 }
 
 
@@ -122,8 +115,6 @@ static PyObject *kmeansppC(PyObject *self, PyObject *args) {
     kmeansWithInitialCentroids(points1, clusterArray1);
     freeClusterArray(clusterArray1);
     freePointsArray(points1);
-    Py_XDECREF(pyPoints);
-    Py_XDECREF(pyCentroids);
     return Py_BuildValue("");
 }
 

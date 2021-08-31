@@ -611,16 +611,18 @@ void notSPK(Point *points) {
     if (strcmp(goal, "wam") == 0) {
         result=wam(points);
         printMatrix(result);
+        freeMatrix(result);
     } else if (strcmp(goal, "ddg") == 0) {
         result=ddm(points);
         printMatrix(result);
+        freeMatrix(result);
     } else if (strcmp(goal, "lnorm") == 0) {
         result=lnorm(points);
         printMatrix(result);
+        freeMatrix(result);
     } else if (strcmp(goal, "jacobi") == 0) {
         jacobi(points);
     }
-    freeMatrix(result);
     freePointsArray(points);
 }
 
