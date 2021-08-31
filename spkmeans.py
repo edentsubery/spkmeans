@@ -31,16 +31,16 @@ def distance(point, centroid, min):
     return min
 
 
-def kmeans_pp(k, goal,path):
-    T = sp.newDimension(k,goal,path)
-    n=len(T)
-    k=len(T[0])
+def kmeans_pp(result):
+    n = len(result)
+    k = len(result[0])
     indexes = np.empty(k)
     centroids = np.empty((k, k))
     points_min = np.full(n, np.inf)
-    calculate_initial_centroids(centroids, indexes, k, n, T, points_min)
+    calculate_initial_centroids(centroids, indexes, k, n, result, points_min)
     print_indexes(indexes, k)
-    sp.kmeanspp(T, centroids, k, k, 300, n)
+    print(k,n,result)
+    # sp.kmeanspp(result, convertToList(centroids), k, k, 300, n)
 
 
 def create_points_list(k, points):
@@ -54,21 +54,21 @@ def create_points_list(k, points):
 
 def analize_arguments():
     k = int(sys.argv[1])
-    path = sys.argv[2]
-    goal = sys.argv[3]
+    path = str(sys.argv[3])
+    goal = str(sys.argv[2])
     return k, path, goal
 
 
 def validate_arguments(k, d, n):
     if k >= n:
-        print("Invalid k value")
+        print("Invalid Input!")
         exit(0)
     if d <= 0:
-        print("Invalid d value")
+        print("Invalid Input!")
         exit(0)
 
 
-def calculate_initial_centroids(centroids, indexes, k, n, points,points_min):
+def calculate_initial_centroids(centroids, indexes, k, n, points, points_min):
     index = np.random.choice(n)
     indexes[0] = index
     centroids[0] = points[index]
@@ -88,11 +88,9 @@ def print_indexes(indexes, k):
 
 def spkmeans():
     k, path, goal = analize_arguments()
+    result = sp.goal(k, path, goal)
     if goal == "spk":
-        kmeans_pp(k, goal,path)
-    else:
-        sp.goal(k,goal,path)
+        kmeans_pp(result)
 
 
-if __name__ == '__main__':
-    spkmeans()
+spkmeans()

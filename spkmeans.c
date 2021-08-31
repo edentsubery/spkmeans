@@ -7,44 +7,13 @@
 #include "spkmeans.h"
 
 
-struct Matrix{
-    double** values;
-    int rows;
-    int columns;
-};
-
-struct Eigenvalue{
-    double value;
-    int index;
-};
-
-struct Point {
-    double *coordinates;
-    int index;
-};
-
-struct Cluster {
-    Point sum_by_coordinates;
-    Point centroid;
-    int size;
-};
-
-int d;
-int k;
-char* goal;
-int numberOfPoints;
-int MAX_ITER ;
-
-
-static void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1);
-
-static int countCommas(char *str) {
+int countCommas(char *str) {
     int i;
     for (i = 0; str[i]; str[i] == ',' ? i++ : *str++);
     return i;
 }
 
-static void countPoints(FILE *file) {
+void countPoints(FILE *file) {
     char line[1000];
     int numberOfLines;
     void* result;
@@ -59,7 +28,7 @@ static void countPoints(FILE *file) {
     numberOfPoints = numberOfLines;
 }
 
-static void findD(FILE *file) {
+void findD(FILE *file) {
     int scanresult;
     char line[1000];
     rewind(file);
@@ -67,10 +36,10 @@ static void findD(FILE *file) {
     if(scanresult!=0){
         d = countCommas(line) + 1;
     }
-    
+
 }
 
-static void readAllPointsC(Point* points, FILE *file){
+void readAllPointsC(Point* points, FILE *file){
     Point *curPoint;
     int index;
     int i;
@@ -98,13 +67,13 @@ static void readAllPointsC(Point* points, FILE *file){
     }
 }
 
-static Point* getPointPointer(void) {
+Point* getPointPointer(void) {
     Point *points = malloc(numberOfPoints * sizeof(Point));
     assert(points!=NULL);
     return points;
 }
 
-static void calculateCentroids(Point *points, Cluster *clusterArray) {
+void calculateCentroids(Point *points, Cluster *clusterArray) {
     int j, i, index, changed;
     changed = 1;
     for (j = 0; changed && j < MAX_ITER; j++) {
@@ -117,11 +86,11 @@ static void calculateCentroids(Point *points, Cluster *clusterArray) {
     }
 }
 
-static void freePointPointer(Point *arr) {
+void freePointPointer(Point *arr) {
     free(arr);
 }
 
-static int calculateNewCentroid(Cluster *cluster) {
+int calculateNewCentroid(Cluster *cluster) {
     int changed, m, i;
     changed = 0;
     for (m = 0; m < k; m++) {
@@ -141,7 +110,7 @@ static int calculateNewCentroid(Cluster *cluster) {
     return changed;
 }
 
-static double distanceFromCentroid(Cluster cluster, Point point) {
+double distanceFromCentroid(Cluster cluster, Point point) {
     double distance;
     int i;
     distance = 0;
@@ -151,7 +120,7 @@ static double distanceFromCentroid(Cluster cluster, Point point) {
     return distance;
 }
 
-static Cluster *createClusterArray(Point* points) {
+Cluster *createClusterArray(Point* points) {
     int i,j;
     Cluster *arr;
     void *pointerForCentroid;
@@ -173,7 +142,7 @@ static Cluster *createClusterArray(Point* points) {
     return arr;
 }
 
-static void freeClusterArray(Cluster *cluster) {
+void freeClusterArray(Cluster *cluster) {
     int i;
     for (i = 0; i < k; i++) {
         free(cluster[i].centroid.coordinates);
@@ -182,7 +151,7 @@ static void freeClusterArray(Cluster *cluster) {
     free(cluster);
 }
 
-static int closestCentroid(Cluster *clusters, Point point) {
+int closestCentroid(Cluster *clusters, Point point) {
     int index, i;
     double minDistance, dis;
     index = 0;
@@ -198,11 +167,11 @@ static int closestCentroid(Cluster *clusters, Point point) {
     return index;
 }
 
-static void addPointToArr(Point *pointsArr, Point point, int i) {
+void addPointToArr(Point *pointsArr, Point point, int i) {
     pointsArr[i] = point;
 }
 
-static void addPointToCluster(Cluster *cluster, Point point,int index) {
+void addPointToCluster(Cluster *cluster, Point point,int index) {
     int j;
     for (j = 0; j < k; j++) {
         cluster[index].sum_by_coordinates.coordinates[j] += point.coordinates[j];
@@ -211,7 +180,7 @@ static void addPointToCluster(Cluster *cluster, Point point,int index) {
     cluster[index].size++;
 }
 
-static Matrix createMatrix(int rows,int columns){
+Matrix createMatrix(int rows,int columns){
     struct Matrix matrix;
     double** values;
     int i;
@@ -227,7 +196,7 @@ static Matrix createMatrix(int rows,int columns){
     return matrix;
 }
 
-static Matrix wam(Point *points){
+Matrix wam(Point *points){
     Matrix matrix;
     int i,j;
     matrix=createMatrix(numberOfPoints,numberOfPoints);
@@ -242,7 +211,7 @@ static Matrix wam(Point *points){
     return matrix;
 }
 
-static Matrix ddm(Point *points){
+Matrix ddm(Point *points){
     Matrix matrix,WAM;
     int i;
     WAM=wam(points);
@@ -253,7 +222,7 @@ static Matrix ddm(Point *points){
     return matrix;
 }
 
-static Matrix sqrtDDM(Point *points){
+Matrix sqrtDDM(Point *points){
     Matrix matrix,DDM;
     int i;
     DDM=ddm(points);
@@ -264,7 +233,7 @@ static Matrix sqrtDDM(Point *points){
     return matrix;
 }
 
-static Matrix lnorm(Point *points){
+Matrix lnorm(Point *points){
     Matrix I,matrix,dwd,sqrtddm,WAM;
     int i,j;
     I=createIdentityMatrix();
@@ -280,7 +249,7 @@ static Matrix lnorm(Point *points){
     return matrix;
 }
 
-static double sumForRow(Matrix matrix,int row,int length){
+double sumForRow(Matrix matrix,int row,int length){
     double sum;
     int i;
     sum=0;
@@ -291,7 +260,7 @@ static double sumForRow(Matrix matrix,int row,int length){
 
 }
 
-static Matrix multiplyMatrixes(Matrix A,Matrix B){
+Matrix multiplyMatrixes(Matrix A,Matrix B){
     struct Matrix result;
     int i,j;
     result=createMatrix(A.rows,B.columns);
@@ -303,7 +272,7 @@ static Matrix multiplyMatrixes(Matrix A,Matrix B){
     return result;
 }
 
-static double multiplyRowAndCol(Matrix AA,Matrix BB,int row,int col){
+double multiplyRowAndCol(Matrix AA,Matrix BB,int row,int col){
     double sum = 0;
     int i;
     for(i=0;i<AA.columns;i++){
@@ -313,7 +282,7 @@ static double multiplyRowAndCol(Matrix AA,Matrix BB,int row,int col){
 }
 
 
-static Matrix* findU(Matrix LNORM){
+Matrix* findU(Matrix LNORM){
     int i = 0;
     Matrix A,P,PT,AA,U;
     Matrix* UAA=malloc(2* sizeof(Matrix));
@@ -334,8 +303,7 @@ static Matrix* findU(Matrix LNORM){
     UAA[1]=AA;
     return UAA;
 }
-
-static int* findPivot(Matrix A){
+int* findPivot(Matrix A){
     double max;
     int *pivot;
     int i,j;
@@ -356,7 +324,7 @@ static int* findPivot(Matrix A){
     return pivot;
 }
 
-static int convergence(Matrix A, Matrix AA){
+int convergence(Matrix A, Matrix AA){
     if(offDiagonalSum(A)-offDiagonalSum(AA)<=0.000000000000001){
         return 1;
     }
@@ -365,7 +333,7 @@ static int convergence(Matrix A, Matrix AA){
     }
 }
 
-static void printMatrix(Matrix mat) {
+void printMatrix(Matrix mat) {
     int i;
     int j;
     for (i = 0; i < mat.rows; i++) {
@@ -378,7 +346,7 @@ static void printMatrix(Matrix mat) {
         }
     }
 }
-static Matrix transpose(Matrix p){
+Matrix transpose(Matrix p){
     Matrix pt;
     int i,j;
     pt=createMatrix(p.rows,p.columns);
@@ -390,7 +358,7 @@ static Matrix transpose(Matrix p){
     return pt;
 }
 
-static double offDiagonalSum(Matrix mat){
+double offDiagonalSum(Matrix mat){
     double sum;
     int i,j;
     sum=0;
@@ -403,7 +371,7 @@ static double offDiagonalSum(Matrix mat){
     }
     return sum;
 }
-static double calculateT(int i, int j,Matrix A){
+double calculateT(int i, int j,Matrix A){
     double theta,t;
     theta=(A.values[j][j]-A.values[i][i])/(2*(A.values[i][j]));
     if(theta<0){
@@ -415,7 +383,7 @@ static double calculateT(int i, int j,Matrix A){
     return t;
 
 }
-static Matrix createIdentityMatrix(void){
+Matrix createIdentityMatrix(void){
     Matrix mat=createMatrix(numberOfPoints,numberOfPoints);
     int i;
     for(i=0;i<numberOfPoints;i++){
@@ -423,7 +391,7 @@ static Matrix createIdentityMatrix(void){
     }
     return mat;
 }
-static Matrix createPivotMatrix(Matrix A){
+Matrix createPivotMatrix(Matrix A){
     int* pivot=findPivot(A);
     int i=pivot[0];
     int j=pivot[1];
@@ -438,7 +406,7 @@ static Matrix createPivotMatrix(Matrix A){
     mat.values[j][i]=-s;
     return mat;
 }
-static double* findCandS(double t){
+double* findCandS(double t){
     double *cs;
     cs=malloc(2* sizeof(double));
     assert(cs!=NULL);
@@ -447,7 +415,7 @@ static double* findCandS(double t){
     return cs;
 }
 
-static double distance(Point *points,int i, int j){
+double distance(Point *points,int i, int j){
     double distance;
     int l;
     distance=0;
@@ -457,7 +425,7 @@ static double distance(Point *points,int i, int j){
     return sqrt(distance);
 }
 
-static void emptyClusters(Cluster *clusters) {
+void emptyClusters(Cluster *clusters) {
     int i, j;
     for (i = 0; i < k; i++) {
         for (j = 0; j < k; j++) {
@@ -467,7 +435,7 @@ static void emptyClusters(Cluster *clusters) {
     }
 }
 
-static Matrix columnsToRows(Matrix U){
+Matrix columnsToRows(Matrix U){
     Matrix mat;
     int i,j;
     mat=createMatrix(numberOfPoints,numberOfPoints);
@@ -479,14 +447,14 @@ static Matrix columnsToRows(Matrix U){
     return mat;
 }
 
-static void jacobi(Point *points){
+void jacobi(Point *points){
     Matrix* UAA=findU(fillLnorm(points));
     Matrix eigenvectors=columnsToRows(UAA[0]);
     printEigenvalues(configureEigenvalues(UAA[1]));
     printMatrix(eigenvectors);
 }
 
-static void convertTMatrixToPoints(Point* points,Matrix T){
+void convertTMatrixToPoints(Point* points,Matrix T){
     Point *curPoint;
     int index;
     int i;
@@ -503,7 +471,7 @@ static void convertTMatrixToPoints(Point* points,Matrix T){
     }
 }
 
-static Matrix fillLnorm(Point *points){
+Matrix fillLnorm(Point *points){
     Matrix mat;
     int i,j;
     mat=createMatrix(numberOfPoints,numberOfPoints);
@@ -515,7 +483,7 @@ static Matrix fillLnorm(Point *points){
     return mat;
 }
 
-static void kmeans(Matrix T){
+void kmeans(Matrix T){
     Point *points1;
     Cluster *clusterArray1;
     d=k;
@@ -527,12 +495,12 @@ static void kmeans(Matrix T){
     freePointPointer(points1);
 }
 
-static void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1) {
+void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1) {
     calculateCentroids(points1, clusterArray1);
     printCentroids(clusterArray1);
 }
 
-static void printCentroids(const Cluster *clusterArray) {
+void printCentroids(const Cluster *clusterArray) {
     int i;
     int j;
     for (i = 0; i < k; i++) {
@@ -546,7 +514,7 @@ static void printCentroids(const Cluster *clusterArray) {
     }
 }
 
-static void printEigenvalues(Eigenvalue* eigenvalues){
+void printEigenvalues(Eigenvalue* eigenvalues){
     int j;
     for (j = 0; j < numberOfPoints; j++) {
         if (j == numberOfPoints- 1) {
@@ -559,16 +527,20 @@ static void printEigenvalues(Eigenvalue* eigenvalues){
 }
 
 int main(int args, char *argv[]){
-    Point *points;
-    FILE *file=fopen( argv[3], "r" );
-    assert(args==4);
-    analyzeArguments(argv);
-    countPoints(file);
-    findD(file);
-    points = getPointPointer();
-    readAllPointsC(points,file);
-    validateArguments();
-    if(strcmp(goal,"wam") == 0){
+    Point *points = generalC(args, argv);
+    if(strcmp(goal,"spk")!=0){
+        notSPK(points);
+        return 0;
+    }
+    else{
+        kmeans(spk(points));
+        return 0;
+    }
+
+}
+
+void notSPK(Point *points) {
+    if(strcmp(goal, "wam") == 0){
         printMatrix(wam(points));
     }
     else if(strcmp(goal,"ddg") == 0){
@@ -576,19 +548,27 @@ int main(int args, char *argv[]){
     }
     else if(strcmp(goal,"lnorm") == 0){
         printMatrix(lnorm(points));
-    }  
+    }
     else if(strcmp(goal,"jacobi") == 0){
         jacobi(points);
     }
-    else{
-        kmeans(spk(points));
-
-    }
     freePointPointer(points);
-    return 0;
 }
 
-static Matrix spk(Point *points) {
+Point *generalC(int args, char *argv[]) {
+    Point *points;
+    FILE *file=fopen( argv[3], "r" );
+    assert(args == 4);
+    analyzeArguments(argv);
+    countPoints(file);
+    findD(file);
+    points = getPointPointer();
+    readAllPointsC(points,file);
+    validateArguments();
+    return points;
+}
+
+Matrix spk(Point *points) {
     Matrix LNORM=lnorm(points);
     Matrix* UAA=findU(LNORM);
     Eigenvalue * eigenvalues=configureEigenvalues(UAA[1]);
@@ -597,10 +577,12 @@ static Matrix spk(Point *points) {
         printEigenvalues(eigenvalues);
         eigengapHeuristic(eigenvalues);
     }
-    return createT(eigenvalues,UAA[0]);
+    Matrix T=createT(eigenvalues,UAA[0]);
+    printMatrix(T);
+    return T;
 }
 
-static Matrix createT(Eigenvalue* eigenvalues,Matrix U){
+Matrix createT(Eigenvalue* eigenvalues,Matrix U){
     Matrix mat;
     int i,j,col;
     mat=createMatrix(numberOfPoints,k);
@@ -614,13 +596,13 @@ static Matrix createT(Eigenvalue* eigenvalues,Matrix U){
     return mat;
 }
 
-static void normalizeRows(Matrix mat){
+void normalizeRows(Matrix mat){
     int i;
     for(i=0;i<numberOfPoints;i++){
         normalizeRowForIndex(mat,i);
     }
 }
-static void normalizeRowForIndex(Matrix mat, int index){
+void normalizeRowForIndex(Matrix mat, int index){
     double sum,size;
     int i;
     sum=0;
@@ -632,11 +614,11 @@ static void normalizeRowForIndex(Matrix mat, int index){
         mat.values[index][i]=mat.values[index][i]/size;
     }
 }
-static void sortEigenvalues (Eigenvalue* eigenvalues,Matrix U){
+void sortEigenvalues (Eigenvalue* eigenvalues,Matrix U){
     qsort (eigenvalues,U.columns, sizeof(Eigenvalue), (int (*)(const void *, const void *)) compare);
 }
 
-static Eigenvalue * configureEigenvalues(Matrix AA){
+Eigenvalue * configureEigenvalues(Matrix AA){
     Eigenvalue * eg;
     int i;
     eg=malloc(numberOfPoints* sizeof(Eigenvalue));
@@ -648,7 +630,7 @@ static Eigenvalue * configureEigenvalues(Matrix AA){
     return eg;
 }
 
-static int compare (const void * a, const void * b)
+int compare (const void * a, const void * b)
 {
     double diff=(*(Eigenvalue *)a).value - (*(Eigenvalue *)b).value;
     if(diff==0){
@@ -662,11 +644,11 @@ static int compare (const void * a, const void * b)
     }
 }
 
-static void eigengapHeuristic(Eigenvalue* eigenvalues){
+void eigengapHeuristic(Eigenvalue* eigenvalues){
     k= findGap(eigenvalues);
 }
 
-static int findGap(Eigenvalue* eigenvalues){
+int findGap(Eigenvalue* eigenvalues){
     double max;
     int i,index;
     index=0;
@@ -681,26 +663,26 @@ static int findGap(Eigenvalue* eigenvalues){
 }
 
 
-static void analyzeArguments(char *const *argv) {
+void analyzeArguments(char *const *argv) {
     k = atoi(argv[1]);
     if (k < 0) {
-        printf("Invalid value for number of means.\n");
+        printf("Invalid Input!\n");
     }
     goal=argv[2];
 }
 
-static void validateArguments(void){
+void validateArguments(void){
     int valid=1;
     if (d<=0){
-        printf("Invalid value for d");
+        printf("Invalid Input!");
         valid=0;
     }
     if(k<0){
-        printf("Invalid value for k");
+        printf("Invalid Input!");
         valid=0;
     }
     if(numberOfPoints<k){
-        printf("Invalid value for K: bigger than amount of points");
+        printf("Invalid Input!");
         valid=0;
     }
     if(valid==0){

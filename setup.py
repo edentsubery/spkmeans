@@ -20,9 +20,9 @@ setup(
         ],
     
     ext_modules=[
-        Extension(
-            'spkmeansmodule',
-            ['spkmeansmodule.c'],
-        ),
+        Extension("spkmeansmodule", sources=[
+                'spkmeansmodule.c', 'spkmeans.c']
+        )
     ],
 )
+

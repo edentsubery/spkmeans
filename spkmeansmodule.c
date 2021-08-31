@@ -3,12 +3,25 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "spkmeans.c"
 #include "spkmeans.h"
-#include "../../../Users/edent/AppData/Local/Programs/Python/Python36/include/object.h"
 #include "../../../Users/edent/AppData/Local/Programs/Python/Python36/include/Python.h"
 
-static Point *general(PyObject *args);
+static Point *generalPy(PyObject *args);
+
+static PyObject* createReturnedArray(double** matrixValues) {
+    PyObject* returnedList=PyList_New(numberOfPoints);
+    PyObject* returnedPoint;
+    int i;
+    int j;
+    for (i = 0; i < numberOfPoints; i++) {
+        returnedPoint=PyList_New(k);
+        for (j = 0; j < k; j++) {
+            PyList_SetItem(returnedPoint,j,PyFloat_FromDouble(matrixValues[i][j]));
+        }
+        PyList_SetItem(returnedList,i,returnedPoint);
+    };
+    return returnedList;
+}
 
 static Cluster *createClusterArrayWithCentroids(PyObject* pyCentroids) {
     int i,j;
@@ -53,60 +66,45 @@ static void readAllPointsPy( Point *points,PyObject* pyPoints) {
     }
 }
 
-static void goalFunction(PyObject *self, PyObject *args){
-    Point* points=general(args);
-    if(strcmp(goal,"wam") == 0){
-        wam(points);
-        printMatrix(WAM);
+static PyObject * goalFunction(PyObject *self, PyObject *args){
+    printf("before generalPy");
+    Point* points= generalPy(args);
+    printf("after generalPy");
+    if(strcmp(goal,"spk")!=0){
+        notSPK(points);
+        Matrix T=createMatrix(numberOfPoints,k);
+        return createReturnedArray(T.values);
     }
-    if(strcmp(goal,"ddg") == 0){
-        ddm(points);
-        printMatrix(DDM);
+    else{
+        Matrix T=spk(points);
+        freePointPointer(points);
+        return createReturnedArray(T.values);
     }
-    if(strcmp(goal,"lnorm") == 0){
-        lnorm(points);
-        printMatrix(LNORM);
-    }
-    if(strcmp(goal,"jacobi") == 0){
-        jacobi(points);
-        printEigenvalues();
-        printMatrix(eigenvectors);
-    }
-    freePointPointer(points);
 }
 
 
 static void kmeanspp(PyObject *self, PyObject *args){
     Point *points1;
     Cluster *clusterArray1;
-    Cluster *actualClusters;
     PyObject* pyCentroids;
     PyObject* pyPoints;
     if(!PyArg_ParseTuple(args,"ooiiii",&pyPoints, &pyCentroids,&k,&d,&MAX_ITER,&numberOfPoints)){
-        printf("parsing failed\n");
+        printf("An Error Has Occured\n");
+        exit(0);
     }
     points1=getPointPointer();
-    actualClusters=createClusterArrayEmpty();
     readAllPointsPy(points1,pyPoints);
     clusterArray1 = createClusterArrayWithCentroids(pyCentroids);
-    kmeansWithInitialCentroids(points1, clusterArray1, actualClusters);
-    freeClusterArray(actualClusters);
+    kmeansWithInitialCentroids(points1, clusterArray1);
     freeClusterArray(clusterArray1);
     freePointPointer(points1);
 }
 
-static double** getT(PyObject *self, PyObject *args){
-    Point *points = general(args);
-    spk(points);
-    freePointPointer(points);
-    printf("calcuated T");
-    return T.values;
-}
 
-static Point *general(PyObject *args) {
+static Point *generalPy(PyObject *args) {
     Point *points;
     char * filePath;
-    PyArg_ParseTuple(args,"iss", &k,&goal,&filePath);
+    PyArg_ParseTuple(args,"iss", &k,&filePath,&goal);
     FILE *file=fopen( filePath, "r" );
     countPoints(file);
     findD(file);
@@ -118,11 +116,6 @@ static Point *general(PyObject *args) {
 
 
 static PyMethodDef capiMethods[]={
-        {"newDimension",
-         (PyCFunction) getT,
-         METH_VARARGS,
-         PyDoc_STR("convert to a new dimension")},
-
         {"kmeanspp",
          (PyCFunction) kmeanspp,
          METH_VARARGS,

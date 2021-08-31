@@ -1,87 +1,86 @@
 #define PY_SSIZE_T_CLEAN
 
-typedef struct Cluster Cluster;
-typedef struct Point Point;
-typedef struct Matrix Matrix;
-typedef struct Eigenvalue Eigenvalue;
 
+int d;
+int k;
+char* goal;
+int numberOfPoints;
+int MAX_ITER ;
 
-static int  compare (const void * a, const void * b);
-static int countCommas(char *str);
-static Matrix spk(Point *points);
-static void countPoints(FILE *file);
-static void findD(FILE *file);
-static void readAllPointsC(Point* points, FILE *file);
+typedef struct Matrix{
+    double** values;
+    int rows;
+    int columns;
+}Matrix;
 
-static Point* getPointPointer(void);
+typedef struct Eigenvalue{
+    double value;
+    int index;
+}Eigenvalue;
 
-static void calculateCentroids(Point *points, Cluster *clusterArray);
+typedef struct Point {
+    double *coordinates;
+    int index;
+}Point;
 
-static void freePointPointer(Point *arr);
+typedef struct Cluster {
+    Point sum_by_coordinates;
+    Point centroid;
+    int size;
+}Cluster;
 
-static int calculateNewCentroid(Cluster *cluster);
-
-static double distanceFromCentroid(Cluster cluster, Point point);
-
-static Cluster *createClusterArray(Point* points);
-
-static void freeClusterArray(Cluster *cluster);
-
-static int closestCentroid(Cluster *clusters, Point point);
-
-static void addPointToArr(Point *pointsArr, Point point, int i);
-
-static void addPointToCluster(Cluster *cluster, Point point,int index);
-
-static Matrix createMatrix(int rows,int columns);
-static Matrix wam(Point *points);
-
-static Matrix ddm(Point *points);
-
-static Matrix sqrtDDM(Point *points);
-static Matrix lnorm(Point *points);
-
-static double sumForRow(Matrix matrix,int row,int length);
-
-static Matrix multiplyMatrixes(Matrix A,Matrix B);
-
-static double multiplyRowAndCol(Matrix A,Matrix B,int row,int col);
-
-static Matrix* findU(Matrix LNORM);
-
-static int* findPivot(Matrix A);
-static int convergence(Matrix A, Matrix AA);
-static Matrix fillLnorm(Point *points);
-static void printCentroids(const Cluster *clusterArray);
-static void printMatrix(Matrix mat);
-static Matrix transpose(Matrix p);
-static double offDiagonalSum(Matrix mat);
-static double calculateT(int i, int j,Matrix A);
-static Matrix createIdentityMatrix(void);
-static Matrix createPivotMatrix(Matrix A);
-static double* findCandS(double t);
-
-static double distance(Point *points,int i, int j);
-static void emptyClusters(Cluster *clusters) ;
-
-static Matrix columnsToRows(Matrix U);
-
-static void jacobi(Point *points);
-
-static void convertTMatrixToPoints(Point* points,Matrix T);
-
-static void kmeans(Matrix T);
-
-static Matrix createT(Eigenvalue* eigenvalues,Matrix U);
-
-static void normalizeRows(Matrix mat);
-static void normalizeRowForIndex(Matrix mat, int index);
-
-static void printEigenvalues(Eigenvalue* eigenvalues);
-static void eigengapHeuristic(Eigenvalue* eigenvalues);
-
-static int findGap(Eigenvalue* eigenvalues);
-static Eigenvalue* configureEigenvalues(Matrix U);
-static void sortEigenvalues (Eigenvalue* eigenvalues,Matrix U);
-static void validateArguments(void);
-static void analyzeArguments( char *const *argv);
+void kmeansWithInitialCentroids(Point *points1, Cluster *clusterArray1);
+int  compare (const void * a, const void * b);
+int countCommas(char *str);
+Matrix spk(Point *points);
+void countPoints(FILE *file);
+void findD(FILE *file);
+void readAllPointsC(Point* points, FILE *file);
+Point* getPointPointer(void);
+void calculateCentroids(Point *points, Cluster *clusterArray);
+void freePointPointer(Point *arr);
+int calculateNewCentroid(Cluster *cluster);
+double distanceFromCentroid(Cluster cluster, Point point);
+Cluster *createClusterArray(Point* points);
+void freeClusterArray(Cluster *cluster);
+int closestCentroid(Cluster *clusters, Point point);
+void addPointToArr(Point *pointsArr, Point point, int i);
+void addPointToCluster(Cluster *cluster, Point point,int index);
+Matrix createMatrix(int rows,int columns);
+Matrix wam(Point *points);
+Matrix ddm(Point *points);
+Matrix sqrtDDM(Point *points);
+Matrix lnorm(Point *points);
+double sumForRow(Matrix matrix,int row,int length);
+Matrix multiplyMatrixes(Matrix A,Matrix B);
+double multiplyRowAndCol(Matrix A,Matrix B,int row,int col);
+Matrix* findU(Matrix LNORM);
+int* findPivot(Matrix A);
+int convergence(Matrix A, Matrix AA);
+Matrix fillLnorm(Point *points);
+void printCentroids(const Cluster *clusterArray);
+void printMatrix(Matrix mat);
+Matrix transpose(Matrix p);
+double offDiagonalSum(Matrix mat);
+double calculateT(int i, int j,Matrix A);
+Matrix createIdentityMatrix(void);
+Matrix createPivotMatrix(Matrix A);
+double* findCandS(double t);
+double distance(Point *points,int i, int j);
+void emptyClusters(Cluster *clusters) ;
+Matrix columnsToRows(Matrix U);
+void jacobi(Point *points);
+void convertTMatrixToPoints(Point* points,Matrix T);
+void kmeans(Matrix T);
+Matrix createT(Eigenvalue* eigenvalues,Matrix U);
+void normalizeRows(Matrix mat);
+void normalizeRowForIndex(Matrix mat, int index);
+void printEigenvalues(Eigenvalue* eigenvalues);
+void eigengapHeuristic(Eigenvalue* eigenvalues);
+int findGap(Eigenvalue* eigenvalues);
+Eigenvalue* configureEigenvalues(Matrix U);
+void sortEigenvalues (Eigenvalue* eigenvalues,Matrix U);
+void validateArguments(void);
+void analyzeArguments( char *const *argv);
+Point *generalC(int args, char *argv[]);
+void notSPK(Point *points);
