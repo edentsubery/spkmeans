@@ -9,18 +9,11 @@
 
 static Point *generalPy(PyObject *args) {
     Point *points;
-    char *filePath;
     if (!PyArg_ParseTuple(args, "iss", &k, &filePath, &goal)) {
         printf("An Error Has Occured\n");
         exit(0);
     }
-    FILE *file = fopen(filePath, "r");
-    countPoints(file);
-    findD(file);
-    points = getPointPointer();
-    readAllPointsC(points, file);
-    validateArguments();
-    fclose(file);
+    points = getPointsFromFile();
     return points;
 }
 
@@ -93,7 +86,6 @@ static PyObject *goalFunction(PyObject *self, PyObject *args) {
     } else {
         T = spk(points);
     }
-//    freePointsArray(points);
     PyObject *result = createReturnedArray(T.values);
     freeMatrix(T);
     return result;
@@ -114,7 +106,6 @@ static PyObject *kmeansppC(PyObject *self, PyObject *args) {
     clusterArray1 = createClusterArrayWithCentroids(pyCentroids);
     kmeansWithInitialCentroids(points1, clusterArray1);
     freeClusterArray(clusterArray1);
-    freePointsArray(points1);
     return Py_BuildValue("");
 }
 

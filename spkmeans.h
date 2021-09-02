@@ -4,6 +4,7 @@
 int d;
 int k;
 char *goal;
+char *filePath;
 int numberOfPoints;
 int MAX_ITER;
 
@@ -39,13 +40,19 @@ int countCommas(char *str);
 
 Matrix spk(Point *points);
 
+int EndsWithTail(char *fileName, char* tail);
+
 void countPoints(FILE *file);
 
-void findD(FILE *file);
+void findDTXT(FILE *file);
 
-void readAllPointsC(Point *points, FILE *file);
+void readAllPointsCTXT(Point *points, FILE *file);
+
+void readAllPointsCCSV(Point *points, FILE *file);
 
 Point *getPointPointer(void);
+Point *getPointsFromFile(void);
+
 void freePointsArray(Point* points);
 
 void calculateCentroids(Point *points, Cluster *clusterArray);

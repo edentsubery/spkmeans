@@ -6,7 +6,6 @@
 #include <math.h>
 #include "spkmeans.h"
 
-
 void freeMatrix(Matrix matrix){
     int i;
     for(i=0;i<matrix.rows;i++){
@@ -21,7 +20,6 @@ int countCommas(char *str) {
     for (i = 0; str[i]; str[i] == ',' ? i++ : *str++);
     return i;
 }
-
 void countPoints(FILE *file) {
     char line[1000];
     int numberOfLines;
@@ -37,7 +35,20 @@ void countPoints(FILE *file) {
     numberOfPoints = numberOfLines;
 }
 
-void findD(FILE *file) {
+int EndsWithTail(char *fileName, char* tail)
+{
+    int len;
+    if (strlen(tail) > strlen(fileName)){
+        return 0;
+    }
+    len = strlen(fileName);
+    if (strcmp(&fileName[len-strlen(tail)],tail) == 0){
+        return 1;
+    }
+    return 0;
+}
+
+void findDTXT(FILE *file) {
     int scanresult;
     char line[1000];
     rewind(file);
@@ -47,8 +58,50 @@ void findD(FILE *file) {
     }
 
 }
+void findDCSV(FILE *file){
+    char line[1000];
+    char* token;
+    int i=1;
+    rewind(file);
+    fgets(line, 1000, file);
+    token = strtok(line, ",");
+    while(token != NULL)
+    {
+        token = strtok(NULL, ",");
+        i++;
+    }
+    d=i;
+}
 
-void readAllPointsC(Point *points, FILE *file) {
+void readAllPointsCCSV(Point *points, FILE *file){
+    Point *curPoint;
+    int index;
+    int i;
+    double value;
+    char line[1000];
+    char* token;
+    rewind(file);
+    index = 0;
+    while (index < numberOfPoints){
+        fgets(line, 1000, file);
+        curPoint = malloc(sizeof(Point));
+        assert(curPoint != NULL);
+        curPoint->coordinates = malloc(d * sizeof(double));
+        assert(curPoint->coordinates != NULL);
+        for (i = 0; i < d; i++) {
+            token = strtok(line, ",");
+            value=atof(token);
+            curPoint->coordinates[i] = value;
+        }
+        addPointToArr(points, *curPoint, index++);
+        free(curPoint->coordinates);
+        free(curPoint);
+    }
+
+}
+
+
+void readAllPointsCTXT(Point *points, FILE *file) {
     Point *curPoint;
     int index;
     int i;
@@ -84,15 +137,22 @@ Point *getPointPointer(void) {
 }
 
 void calculateCentroids(Point *points, Cluster *clusterArray) {
-    int j, i, index, changed;
+    int j, i, index, changed,prev_index;
     changed = 1;
-    for (j = 0; changed && j < MAX_ITER; j++) {
+    j=0;
+    while(changed&& j<MAX_ITER) {
+        changed=0;
         emptyClusters(clusterArray);
         for (i = 0; i < numberOfPoints; i++) {
+            prev_index=points[i].index;
             index = closestCentroid(clusterArray, points[i]);
             addPointToCluster(clusterArray, points[i], index);
+            if(prev_index!=index){
+                changed=1;
+            }
         }
-        changed = calculateNewCentroid(clusterArray);
+        calculateNewCentroid(clusterArray);
+        j++;
     }
 }
 
@@ -135,12 +195,12 @@ Cluster *createClusterArray(Point *points) {
     arr = malloc(k * sizeof(Cluster));
     assert(arr != NULL);
     for (i = 0; i < k; i++) {
-        pointerForCentroid = malloc(k * sizeof(double));
+        pointerForCentroid = malloc(d * sizeof(double));
         assert(pointerForCentroid != NULL);
-        pointerForSums = malloc(k * sizeof(double));
+        pointerForSums = malloc(d * sizeof(double));
         assert(pointerForSums != NULL);
         arr[i].centroid.coordinates = pointerForCentroid;
-        for (j = 0; j < k; j++) {
+        for (j = 0; j < d; j++) {
             arr[i].centroid.coordinates[j] = points[i].coordinates[j];
         }
         arr[i].sum_by_coordinates.coordinates = pointerForSums;
@@ -628,13 +688,25 @@ void notSPK(Point *points) {
 
 Point *generalC(int args, char *argv[]) {
     Point *points;
-    FILE *file = fopen(argv[3], "r");
     assert(args == 4);
     analyzeArguments(argv);
+    points = getPointsFromFile();
+    return points;
+}
+
+Point *getPointsFromFile() {
+    Point *points;
+    FILE *file = fopen(filePath, "r");
     countPoints(file);
-    findD(file);
     points = getPointPointer();
-    readAllPointsC(points, file);
+    if(EndsWithTail(filePath,".txt")){
+        findDTXT(file);
+        readAllPointsCTXT(points, file);
+    }
+    else{
+        findDCSV(file);
+        readAllPointsCCSV(points,file);
+    }
     validateArguments();
     fclose(file);
     return points;
@@ -746,6 +818,8 @@ void analyzeArguments(char *const *argv) {
         printf("Invalid Input!\n");
     }
     goal = argv[2];
+    filePath=argv[3];
+    MAX_ITER=300;
 }
 
 void validateArguments(void) {
