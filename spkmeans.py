@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import spkmeansmodule as sp
 
+
 def convertToList(array):
     n = len(array)
     d = len(array[0])

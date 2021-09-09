@@ -40,7 +40,7 @@ int countCommas(char *str);
 
 Matrix spk(Point *points);
 
-int EndsWithTail(char *fileName, char* tail);
+int EndsWithTail(char *fileName, char *tail);
 
 void countPoints(FILE *file);
 
@@ -51,16 +51,22 @@ void readAllPointsCTXT(Point *points, FILE *file);
 void readAllPointsCCSV(Point *points, FILE *file);
 
 Point *getPointPointer(void);
+
 Point *getPointsFromFile(void);
 
-void freePointsArray(Point* points);
+void freePointsArray(Point *points);
 
 void calculateCentroids(Point *points, Cluster *clusterArray);
 
+Point *csvCase(Point *points, FILE *file);
+
 int calculateNewCentroid(Cluster *cluster);
 
-double distanceFromCentroid(Cluster cluster, Point point);
+Point *txtCase(Point *points, FILE *file);
 
+double distanceFromCentroid(Cluster cluster, Point point);
+void countPointsTXT(FILE *file);
+void countPointsCSV(FILE *file);
 Cluster *createClusterArray(Point *points);
 
 void freeClusterArray(Cluster *cluster);

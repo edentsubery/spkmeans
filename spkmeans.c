@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -6,9 +5,9 @@
 #include <math.h>
 #include "spkmeans.h"
 
-void freeMatrix(Matrix matrix){
+void freeMatrix(Matrix matrix) {
     int i;
-    for(i=0;i<matrix.rows;i++){
+    for (i = 0; i < matrix.rows; i++) {
         free(matrix.values[i]);
     }
     free(matrix.values);
@@ -20,7 +19,8 @@ int countCommas(char *str) {
     for (i = 0; str[i]; str[i] == ',' ? i++ : *str++);
     return i;
 }
-void countPoints(FILE *file) {
+
+void countPointsTXT(FILE *file) {
     char line[1000];
     int numberOfLines;
     void *result;
@@ -35,14 +35,28 @@ void countPoints(FILE *file) {
     numberOfPoints = numberOfLines;
 }
 
-int EndsWithTail(char *fileName, char* tail)
-{
+void countPointsCSV(FILE *file) {
+    char c;
+    int numberOfLines = 0;
+    c = getc(file);
+    while (c != EOF) {
+        if (c == '\n') {
+            numberOfLines++;
+        }
+        c = getc(file);
+    }
+    numberOfPoints = numberOfLines;
+
+
+}
+
+int EndsWithTail(char *fileName, char *tail) {
     int len;
-    if (strlen(tail) > strlen(fileName)){
+    if (strlen(tail) > strlen(fileName)) {
         return 0;
     }
     len = strlen(fileName);
-    if (strcmp(&fileName[len-strlen(tail)],tail) == 0){
+    if (strcmp(&fileName[len - strlen(tail)], tail) == 0) {
         return 1;
     }
     return 0;
@@ -58,39 +72,43 @@ void findDTXT(FILE *file) {
     }
 
 }
-void findDCSV(FILE *file){
+
+void findDCSV(FILE *file) {
     char line[1000];
-    char* token;
-    int i=1;
+    char *token;
+    int i = 0;
     rewind(file);
     fgets(line, 1000, file);
     token = strtok(line, ",");
-    while(token != NULL)
-    {
+    while (token != NULL) {
         token = strtok(NULL, ",");
         i++;
     }
-    d=i;
+    d = i;
 }
 
-void readAllPointsCCSV(Point *points, FILE *file){
+void readAllPointsCCSV(Point *points, FILE *file) {
     Point *curPoint;
     int index;
     int i;
     double value;
     char line[1000];
-    char* token;
+    char *token;
     rewind(file);
     index = 0;
-    while (index < numberOfPoints){
+    while (index < numberOfPoints) {
         fgets(line, 1000, file);
         curPoint = malloc(sizeof(Point));
         assert(curPoint != NULL);
         curPoint->coordinates = malloc(d * sizeof(double));
         assert(curPoint->coordinates != NULL);
-        for (i = 0; i < d; i++) {
-            token = strtok(line, ",");
-            value=atof(token);
+        i = 0;
+        token = strtok(line, ",");
+        value = atof(token);
+        curPoint->coordinates[i] = value;
+        for (i = 1; i < d; i++) {
+            token = strtok(NULL, ",");
+            value = atof(token);
             curPoint->coordinates[i] = value;
         }
         addPointToArr(points, *curPoint, index++);
@@ -137,18 +155,18 @@ Point *getPointPointer(void) {
 }
 
 void calculateCentroids(Point *points, Cluster *clusterArray) {
-    int j, i, index, changed,prev_index;
+    int j, i, index, changed, prev_index;
     changed = 1;
-    j=0;
-    while(changed&& j<MAX_ITER) {
-        changed=0;
+    j = 0;
+    while (changed && j < MAX_ITER) {
+        changed = 0;
         emptyClusters(clusterArray);
         for (i = 0; i < numberOfPoints; i++) {
-            prev_index=points[i].index;
+            prev_index = points[i].index;
             index = closestCentroid(clusterArray, points[i]);
             addPointToCluster(clusterArray, points[i], index);
-            if(prev_index!=index){
-                changed=1;
+            if (prev_index != index) {
+                changed = 1;
             }
         }
         calculateNewCentroid(clusterArray);
@@ -236,10 +254,10 @@ int closestCentroid(Cluster *clusters, Point point) {
 
 void addPointToArr(Point *pointsArr, Point point, int i) {
     int j;
-    pointsArr[i].coordinates=malloc(d* sizeof(double ));
-    assert(pointsArr[i].coordinates!=NULL);
-    for(j=0;j<d;j++){
-        pointsArr[i].coordinates[j]=point.coordinates[j];
+    pointsArr[i].coordinates = malloc(d * sizeof(double));
+    assert(pointsArr[i].coordinates != NULL);
+    for (j = 0; j < d; j++) {
+        pointsArr[i].coordinates[j] = point.coordinates[j];
     }
 }
 
@@ -308,13 +326,13 @@ Matrix sqrtDDM(Point *points) {
 }
 
 Matrix lnorm(Point *points) {
-    Matrix I, matrix, dwd, sqrtddm, WAM,middle;
+    Matrix I, matrix, dwd, sqrtddm, WAM, middle;
     int i, j;
     I = createIdentityMatrix();
     matrix = createMatrix(numberOfPoints, numberOfPoints);
     sqrtddm = sqrtDDM(points);
     WAM = wam(points);
-    middle=multiplyMatrixes(sqrtddm, WAM);
+    middle = multiplyMatrixes(sqrtddm, WAM);
     dwd = multiplyMatrixes(middle, sqrtddm);
     freeMatrix(middle);
     freeMatrix(WAM);
@@ -364,14 +382,14 @@ double multiplyRowAndCol(Matrix AA, Matrix BB, int row, int col) {
 
 Matrix *findU(Matrix LNORM) {
     int i = 0;
-    Matrix A, P, PT, AA, U,UU,middle,I;
+    Matrix A, P, PT, AA, U, UU, middle, I;
     Matrix *UAA = malloc(2 * sizeof(Matrix));
     A = LNORM;
     P = createPivotMatrix(A);
-    I=createIdentityMatrix();
+    I = createIdentityMatrix();
     PT = transpose(P);
-    U =multiplyMatrixes(P,I);
-    middle=multiplyMatrixes(PT, A);
+    U = multiplyMatrixes(P, I);
+    middle = multiplyMatrixes(PT, A);
     AA = multiplyMatrixes(middle, P);
     freeMatrix(middle);
     freeMatrix(P);
@@ -384,8 +402,8 @@ Matrix *findU(Matrix LNORM) {
         PT = transpose(P);
         UU = multiplyMatrixes(U, P);
         freeMatrix(U);
-        U=UU;
-        middle=multiplyMatrixes(PT, A);
+        U = UU;
+        middle = multiplyMatrixes(PT, A);
         AA = multiplyMatrixes(middle, P);
         freeMatrix(middle);
         freeMatrix(PT);
@@ -556,10 +574,10 @@ Matrix columnsToRows(Matrix U) {
 }
 
 void jacobi(Point *points) {
-    Matrix LNORM=fillLnorm(points);
+    Matrix LNORM = fillLnorm(points);
     Matrix *UAA = findU(LNORM);
     Matrix eigenvectors = columnsToRows(UAA[0]);
-    Eigenvalue * eigenvalues=configureEigenvalues(UAA[1]);
+    Eigenvalue *eigenvalues = configureEigenvalues(UAA[1]);
     printEigenvalues(eigenvalues);
     printMatrix(eigenvectors);
     freeMatrix(LNORM);
@@ -613,9 +631,9 @@ void kmeans(Matrix T) {
     freePointsArray(points1);
 }
 
-void freePointsArray(Point* points){
+void freePointsArray(Point *points) {
     int i;
-    for(i=0;i<numberOfPoints;i++){
+    for (i = 0; i < numberOfPoints; i++) {
         free(points[i].coordinates);
     }
     free(points);
@@ -658,7 +676,7 @@ int main(int args, char *argv[]) {
         notSPK(points);
         return 0;
     } else {
-        Matrix T=spk(points);
+        Matrix T = spk(points);
         kmeans(T);
         freeMatrix(T);
         return 0;
@@ -669,15 +687,15 @@ int main(int args, char *argv[]) {
 void notSPK(Point *points) {
     Matrix result;
     if (strcmp(goal, "wam") == 0) {
-        result=wam(points);
+        result = wam(points);
         printMatrix(result);
         freeMatrix(result);
     } else if (strcmp(goal, "ddg") == 0) {
-        result=ddm(points);
+        result = ddm(points);
         printMatrix(result);
         freeMatrix(result);
     } else if (strcmp(goal, "lnorm") == 0) {
-        result=lnorm(points);
+        result = lnorm(points);
         printMatrix(result);
         freeMatrix(result);
     } else if (strcmp(goal, "jacobi") == 0) {
@@ -697,18 +715,29 @@ Point *generalC(int args, char *argv[]) {
 Point *getPointsFromFile() {
     Point *points;
     FILE *file = fopen(filePath, "r");
-    countPoints(file);
-    points = getPointPointer();
-    if(EndsWithTail(filePath,".txt")){
-        findDTXT(file);
-        readAllPointsCTXT(points, file);
-    }
-    else{
-        findDCSV(file);
-        readAllPointsCCSV(points,file);
+    if (EndsWithTail(filePath, ".txt")) {
+        points = txtCase(points, file);
+    } else {
+        points = csvCase(points, file);
     }
     validateArguments();
     fclose(file);
+    return points;
+}
+
+Point *csvCase(Point *points, FILE *file) {
+    countPointsCSV(file);
+    points = getPointPointer();
+    findDCSV(file);
+    readAllPointsCCSV(points, file);
+    return points;
+}
+
+Point *txtCase(Point *points, FILE *file) {
+    countPointsTXT(file);
+    points = getPointPointer();
+    findDTXT(file);
+    readAllPointsCTXT(points, file);
     return points;
 }
 
@@ -724,7 +753,7 @@ Matrix spk(Point *points) {
         eigengapHeuristic(eigenvalues);
     }
     freePointsArray(points);
-    T=createT(eigenvalues, UAA[0]);
+    T = createT(eigenvalues, UAA[0]);
     free(UAA);
     free(eigenvalues);
     return T;
@@ -818,8 +847,8 @@ void analyzeArguments(char *const *argv) {
         printf("Invalid Input!\n");
     }
     goal = argv[2];
-    filePath=argv[3];
-    MAX_ITER=300;
+    filePath = argv[3];
+    MAX_ITER = 300;
 }
 
 void validateArguments(void) {
